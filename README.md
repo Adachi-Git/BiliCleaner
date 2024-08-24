@@ -1,6 +1,6 @@
 # bili2bili
 
-`bili2bili` 是一个 Python 脚本，旨在批量修改 Bilibili 用户关系。它能够获取用户的关注列表，并通过 Bilibili API 批量关注/拉黑 这些用户。
+`bili2bili` 能够获取用户的关注列表，并通过 Bilibili API 批量关注/拉黑 这些用户。
 
 ## 功能
 
