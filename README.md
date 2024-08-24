@@ -1,6 +1,6 @@
 # bili2bili
 
-`bili2bili` 能够获取用户的关注列表，并通过 Bilibili API 批量关注/拉黑 这些用户。
+`bili2bili` 能够获取用户的关注列表，并使用 Bilibili API 批量关注/拉黑 这些用户。通过设置不同的 cookie，达到 账号A 换号至 账号B 效果。
 
 ## 功能
 
