@@ -1,0 +1,115 @@
+import requests
+import time
+import os
+
+# 账号1相关设置
+SESSDATA_1 = ''  # 账号1的 SESSDATA
+media_id = ''  # 目标收藏夹的 media_id
+
+# 账号2相关设置
+SESSDATA_2 = ''  # 账号2的 SESSDATA
+CSRF_TOKEN_2 = ''  # 账号2的 CSRF Token (bili_jct)
+
+# 收藏夹 ID（目标收藏夹）
+FAV_MEDIA_ID = ''  # 修改为你希望将视频添加到的收藏夹 ID
+
+# 日志文件
+LOG_FILE = 'added_videos.log'
+
+# API 的 URL
+fav_resource_url = 'https://api.bilibili.com/x/v3/fav/resource/ids'
+add_fav_url = 'https://api.bilibili.com/x/v3/fav/resource/deal'
+
+# 请求头
+headers_1 = {
+    'Cookie': f'SESSDATA={SESSDATA_1}',
+    'Referer': 'https://www.bilibili.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+}
+
+headers_2 = {
+    'Cookie': f'SESSDATA={SESSDATA_2}; bili_jct={CSRF_TOKEN_2}',
+    'Referer': 'https://www.bilibili.com/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+}
+
+# 查询参数
+params = {
+    'media_id': media_id,
+    'platform': 'web'
+}
+
+def get_fav_resource_ids():
+    response = requests.get(fav_resource_url, headers=headers_1, params=params)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if data['code'] == 0:
+            if isinstance(data['data'], list):
+                return data['data']
+            else:
+                return data['data'].get('list', [])
+        else:
+            print(f"获取收藏夹内容失败，错误信息: {data['message']}")
+            return None
+    else:
+        print(f"请求失败，状态码: {response.status_code}")
+        return None
+
+def add_video_to_fav(rid, media_ids):
+    data = {
+        'rid': rid,
+        'type': 2,
+        'add_media_ids': media_ids,
+        'csrf': CSRF_TOKEN_2,
+        'platform': 'web'
+    }
+    response = requests.post(add_fav_url, headers=headers_2, data=data)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if data['code'] == 0:
+            print(f"视频 {rid} 成功添加到收藏夹")
+            log_added_video(rid)  # 记录已添加的视频ID
+        else:
+            print(f"添加视频失败，错误信息: {data['message']}")
+    else:
+        print(f"请求失败，状态码: {response.status_code}")
+
+def log_added_video(rid):
+    with open(LOG_FILE, 'a') as f:
+        f.write(f"{rid}\n")
+
+def is_video_already_added(rid):
+    if not os.path.exists(LOG_FILE):
+        return False
+    with open(LOG_FILE, 'r') as f:
+        added_videos = f.read().splitlines()
+    return str(rid) in added_videos
+
+# 获取账号1收藏夹内容 ID
+resource_ids = get_fav_resource_ids()
+
+# 打印总内容数
+if resource_ids:
+    total_count = len(resource_ids)
+    print(f"账号1的收藏夹总计内容数: {total_count}")
+    
+    count = 0
+    for resource in resource_ids:
+        rid = resource['id']
+        if is_video_already_added(rid):
+            print(f"视频 {rid} 已经被收藏过，跳过...")
+            continue
+        
+        print(f"内容 ID: {rid}, 类型: {resource['type']}, BV ID: {resource.get('bv_id', 'N/A')}")
+        # 将视频添加到指定的收藏夹
+        add_video_to_fav(rid, FAV_MEDIA_ID)  # 使用顶部定义的收藏夹 ID
+        
+        count += 1
+        # 每10个视频后进行5秒延时
+        if count % 10 == 0:
+            print("已处理5个视频，进行5秒延时...")
+            time.sleep(5)  # 延时5秒
+else:
+    print("没有获取到收藏夹内容 ID。")
